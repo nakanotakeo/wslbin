@@ -1,0 +1,30 @@
+#!/usr/bin/python3 
+
+import glob
+import re
+import io
+import sys
+import csv
+import os
+
+if len(sys.argv) < 2:
+    print("designate bodytext")
+    exit(1)
+
+fbody = sys.argv[1]
+
+files = glob.glob("*.pdf")
+
+userlist = []
+for file in files:
+    user = re.search(r'^[S][0-9]+', file)
+    newfile = user.group(0) + "_" + fbody + ".pdf"
+    os.rename(file, newfile)
+    userid = re.sub(r"^S", "us", user.group(0))
+    userlist.append([userid, 0, newfile])
+
+with open("upload.csv", "w") as dest:
+    writer = csv.writer(dest)
+    for userrow in sorted(userlist):
+        writer.writerow(userrow)
+
