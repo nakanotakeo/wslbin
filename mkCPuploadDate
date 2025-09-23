@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-# read rptevaluation_*.csv file to check the submitted date of each report
+# read rptevaluation_*.csv file from the current directory
+# to check the submitted date of each report
 
 import glob
 import re
