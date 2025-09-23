@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+# read rptevaluation_*.csv file to check the submitted date of each report
+
+import glob
+import re
+import io
+import sys
+import csv
+import os
+import fnmatch
+
+def read_rptcsv_date():
+    files = glob.glob('rptevaluation_*.csv')
+
+    result_dict = {}
+
+    for file in files:
+        with open(file, 'r', encoding='cp932') as f:
+            reader = csv.reader(f)
+
+            for _ in range(3):
+                next(reader)
+
+            for row in reader:
+                if len(row)<10 or not row[9]:
+                    continue
+                key = row[0]
+                value = row[9]
+                result_dict[key] = value
+
+    return result_dict
+
+# start
+
+if len(sys.argv) < 2:
+    print("designate bodytext")
+    exit(1)
+
+fbody = sys.argv[1]
+
+upldate = read_rptcsv_date()
+
+userlist = []
+
+for user, time in upldate.items():
+    print(f'{user}: {time}')
+
+    newfile = ''
+    base_name = ''
+
+    files = glob.glob(f'{user}*.pdf')
+    for file in files:
+        base_name = os.path.basename(file)
+        pattern = f'{user}_01_*'
+        if not fnmatch.fnmatch(base_name, pattern):
+            continue
+
+        newfile = user+ "_" + fbody + ".pdf"
+        os.rename(file, newfile)
+
+    userlist.append([user, 0, newfile,time, base_name])
+
+with open("upload.csv", "w", encoding = 'cp932') as dest:
+    writer = csv.writer(dest)
+    for userrow in sorted(userlist):
+        writer.writerow(userrow)
