@@ -1,8 +1,13 @@
 #!/bin/bash
 #
-# Run from WSL shell. nkf is required. Visual Studio 2022 Community should also be installed.
-# usXXXXXX_TheirName.c is assumed at the subdirectory to be given as a command line option.
-# You can log the output of cl.exe by redirecting the command | nkf -w > foo.log
+# Run from WSL shell. nkf is required.
+# Visual Studio 2022 Community should be installed.
+# It doesn't work when the current directory is on the UNC path,
+# namely, it doesn't work on a WSL native filepath. It is because
+# Home directory on the WSL is actually \\wsl.localhost\Debian\home\user\.
+#
+# It works well when the symlink of the Windows' Dropbox folder is
+# placed on a WSL directory, and when the user has been moved to it.
 #
 if [ $# -ne 1 ]; then
   echo "Usage: $0 [c src]";

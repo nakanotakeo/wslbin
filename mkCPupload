@@ -17,13 +17,18 @@ files = glob.glob("*.pdf")
 
 userlist = []
 for file in files:
-    user = re.search(r'^[S][0-9]+', file)
+    user = re.search(r'^[SM][0-9]+', file)
     newfile = user.group(0) + "_" + fbody + ".pdf"
     os.rename(file, newfile)
-    userid = re.sub(r"^S", "us", user.group(0))
+    if user.group(0).startswith("S"):
+        userid = re.sub(r"^S", "us", user.group(0))
+    elif user.group(0).startswith("M"):
+        userid = re.sub(r"^M", "dm", user.group(0))
+    else:
+        exit("user id does not start with S|M")
     userlist.append([userid, 0, newfile, file])
 
-with open("upload.csv", "w", encoding = 'cp932') as dest:
+with open("upload.csv", "w", encoding="cp932") as dest:
     writer = csv.writer(dest)
     for userrow in sorted(userlist):
         writer.writerow(userrow)
