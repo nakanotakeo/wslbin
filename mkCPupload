@@ -21,9 +21,9 @@ for file in files:
     newfile = user.group(0) + "_" + fbody + ".pdf"
     os.rename(file, newfile)
     userid = re.sub(r"^S", "us", user.group(0))
-    userlist.append([userid, 0, newfile])
+    userlist.append([userid, 0, newfile, file])
 
-with open("upload.csv", "w") as dest:
+with open("upload.csv", "w", encoding = 'cp932') as dest:
     writer = csv.writer(dest)
     for userrow in sorted(userlist):
         writer.writerow(userrow)
