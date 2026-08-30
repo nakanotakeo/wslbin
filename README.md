@@ -1,14 +1,14 @@
 # wslbin
 A collection of small tools for WSL
 
-## For C programming class
+## Tools for C programming Classes
 
 * ProCcompile.sh : Compiles C source files in the specified directory using the Visual Studio compiler.
 * ProCexec.sh : Executes compiled binaries and outputs the results to a single log file.
 * ProCexecStdin.sh : Executes compiled binaries by feeding the contents of a specified file to stdin.
-*  ProCcatsrc.sh : Concatenates C source files in a directory into a single PDF file.
-* identity_check.sh : Checks the identity of C source files in a specified directory.
-* Cstrip.py : Strips spaces and CR/LF from C source files. Used by identity_check.sh.
+* ProCcatsrc.sh : Concatenates C source files in a directory into a single PDF file.
+* identity_check.sh : Detects C sourse files for identical content from a directory.
+* Cstrip.py : Removes white spaces and line breaks from C source files. Used by identity_check.sh.
 * vscc.sh : Compiles a single C source file using the Visual Studio compiler.
 
 ## For CoursePower
@@ -18,6 +18,6 @@ A collection of small tools for WSL
 * mkCPhist : Reads a CSV file and generates a grade histogram as a PDF.
 
 ## Misc
-* EEexpAddTopPagePDF.py : Add ChkPage to students submitted pdf
-* getRSSzip.sh : get RSS zip file from surf
+* EEexpAddTopPagePDF.py : Add a ChkPage to PDFs submitted by students
+* getRSSzip.sh : Get RSS ZIP file from the surf server
 
