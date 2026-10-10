@@ -117,7 +117,9 @@ done
 
 printf 'Log: %s\n' "$LOGFILE"
 if command -v libreoffice >/dev/null 2>&1; then
-    if ! libreoffice --headless --convert-to pdf --outdir "$LOGDIR" "$LOGFILE"; then
+    if ! libreoffice --headless \
+        --infilter="Text (encoded):UTF8,LF,IPA Gothic,ja-JP" \
+        --convert-to pdf --outdir "$LOGDIR" "$LOGFILE"; then
         printf 'PDF conversion failed; the log is available.\n' >&2
         failed=1
     fi
