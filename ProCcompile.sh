@@ -1,20 +1,17 @@
 #!/bin/bash
-# Compile Programming C submissions with GCC on WSL/Linux.
-# Requirements (Debian): sudo apt install gcc
-# Usage: bash ProCcompile_gcc.sh Cfolder
+# Cross-compile Programming C submissions for Windows from WSL.
+# Requirements (Debian): sudo apt install gcc-mingw-w64-x86-64
+# Usage: bash ProCcompile.sh Cfolder
 #
-# Each Cfolder/usXXXXXX_Name.c is copied to ProCbuild/usXXXXXX.c,
-# then compiled to ProCbuild/usXXXXXX.out. The part before the first
-# underscore is used as the student ID (e.g. S227083_us227083_... -> S227083).
-# Encoding and line endings are preserved; UTF-8 source files are assumed.
-# Files directly inside Cfolder are processed; subdirectories are not searched.
-# Each submission must be a standalone C source file using standard C libraries.
-# Original submissions are never modified.
-# Run the generated checker separately: bash ProCbuild/execall.sh
-# Compiler log: bash ProCcompile_gcc.sh Cfolder > Compile.log 2>&1
-# Run log: bash ProCbuild/execall.sh | tee ExecAll.log
-# Existing generated files with matching names are overwritten on each run.
-# Return status: 0 = all compiled; 1 = at least one failed; 2 = setup error.
+# Copy each Cfolder/*.c to ./ProCbuild/STUDENT.c without encoding conversion.
+# STUDENT is the part before the first underscore, e.g. S227083_us... -> S227083.
+# Build ./ProCbuild/STUDENT.exe with x86_64-w64-mingw32-gcc (Windows binary).
+# Compiler stdout/stderr are displayed and saved to ./compile.log (overwritten).
+# Each submission must be a standalone UTF-8 C source file.
+# Original submissions are not modified. Subdirectories are not searched.
+# No execall.sh is generated. Review with ProCexec.sh [--stdin=FILE].
+# Matching generated files are overwritten; unrelated old files are left alone.
+# Exit status: 0 = all succeeded; 1 = some failed; 2 = setup error.
 
 set -euo pipefail
 
@@ -23,9 +20,11 @@ if (( $# != 1 )); then
     exit 2
 fi
 
-for tool in gcc; do
+COMPILER=x86_64-w64-mingw32-gcc
+for tool in "$COMPILER" tee; do
     if ! command -v "$tool" >/dev/null 2>&1; then
-        printf 'Required command not found: %s (Debian: sudo apt install gcc)\n' "$tool" >&2
+        printf 'Required command not found: %s\n' "$tool" >&2
+        printf 'Debian compiler installation: sudo apt install gcc-mingw-w64-x86-64\n' >&2
         exit 2
     fi
 done
@@ -50,7 +49,7 @@ if (( ${#sources[@]} == 0 )); then
     exit 2
 fi
 
-# Check all derived names before overwriting any generated source files.
+# Detect name collisions before overwriting generated sources.
 declare -A seen=()
 for source in "${sources[@]}"; do
     name=${source##*/}
@@ -67,29 +66,12 @@ for source in "${sources[@]}"; do
     seen[$student]=$name
 done
 
-# Edit these arrays to match the compiler options used in class.
-# No -std option is imposed: GCC uses its default language dialect.
+# Adjust these arrays to match the options used in class.
+# No -std option is imposed: use the installed compiler's default dialect.
 CFLAGS=(-Wall -Wextra)
 LDLIBS=(-lm)
-
-runner="$OUTDIR/execall.sh"
-cat > "$runner" <<'EOS'
-#!/bin/bash
-# Generated checker. Only successfully compiled submissions are included.
-set -u
-cd -- "$(dirname -- "${BASH_SOURCE[0]}")" || exit 1
-
-check_one() {
-    local source=$1 executable=$2 original=$3 status
-    printf '\n[List %s (submitted as %s)]\n' "$source" "$original"
-    cat -- "$source"
-    printf '\n[Exec %s]\n' "$executable"
-    read -r -p 'Press Enter to run (Ctrl-C to stop): ' || exit 1
-    "./$executable"
-    status=$?
-    printf '\n[Exit status: %s]\n' "$status"
-}
-EOS
+COMPILE_LOG="$PWD/compile.log"
+: > "$COMPILE_LOG"
 
 failed=0
 succeeded=0
@@ -98,27 +80,26 @@ for source in "${sources[@]}"; do
     stem=${name%.c}
     student=${stem%%_*}
     compc="$OUTDIR/$student.c"
-    executable="$OUTDIR/$student.out"
-    printf '\n[Compile %s -> %s.out]\n' "$name" "$student"
-    # Remove a previous executable so a failed compile cannot run stale code.
+    executable="$OUTDIR/$student.exe"
+    printf '\n[Compile %s -> %s.exe]\n' "$name" "$student" | tee -a "$COMPILE_LOG"
+    # Do not allow a failed compile to leave a previous executable for review.
     rm -f -- "$executable"
     if ! cp -- "$source" "$compc"; then
-        printf '[Copy failed: %s]\n' "$name" >&2
+        printf '[Copy failed: %s]\n' "$name" | tee -a "$COMPILE_LOG" >&2
         failed=$((failed + 1))
         continue
     fi
-    if gcc "${CFLAGS[@]}" "$compc" -o "$executable" "${LDLIBS[@]}"; then
-        printf 'check_one %q %q %q\n' "$student.c" "$student.out" "$name" >> "$runner"
+    if "$COMPILER" "${CFLAGS[@]}" "$compc" -o "$executable" "${LDLIBS[@]}" \
+        2>&1 | tee -a "$COMPILE_LOG"; then
         succeeded=$((succeeded + 1))
     else
-        printf '[Compilation failed: %s]\n' "$name" >&2
+        printf '[Compilation failed: %s]\n' "$name" | tee -a "$COMPILE_LOG" >&2
         failed=$((failed + 1))
     fi
 done
 
-chmod +x -- "$runner"
-printf '\nCompiled: %s; failed: %s\n' "$succeeded" "$failed"
-printf 'To review submissions: bash %q\n' "$runner"
+printf '\nCompiled: %s; failed: %s\n' "$succeeded" "$failed" | tee -a "$COMPILE_LOG"
+printf 'Compiler log: %s\n' "$COMPILE_LOG"
 if (( failed > 0 )); then
     exit 1
 fi
