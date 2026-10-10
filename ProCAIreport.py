@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 """提出済み AI 会話 HTML の発言回数と相対リンクを採点表の G 列に追加する。
 
 Python 3.9 以降、外部パッケージ不要。
@@ -16,7 +16,8 @@ ZIP を通常どおり展開し、report_REP... フォルダと rptevaluation_RE
 Excel と同じ場所に ProChtmlAI/ を作り、HTML を英数字名でコピーする。
 例: S235023_us235023_02_日本語タイトル.html → ProChtmlAI/S235023_us235023_02.html
 名前の学籍番号・ユーザー ID・提出ファイル番号を維持し、日本語タイトルを除く。
-Excel の相対リンクはこのコピーに向ける。Excel を移動するときは ProChtmlAI/
+Excel の相対リンクはこのコピーに向ける。リンクを設定した評価メモのセルは、
+青字・下線のハイパーリンク書式にする。Excel を移動するときは ProChtmlAI/
 も一緒に移動し、両者の位置関係を維持する。元の提出 HTML は変更しない。
 出力が既にある場合、--force を付けると出力と今回対象の HTML コピーを更新する。
 
@@ -228,6 +229,53 @@ def widen_memo(sheet):
     cols[:] = sorted(cols, key=lambda c: int(c.get('min')))
 
 
+def hyperlink_cell_style(styles, original_style):
+    """元の配置・罫線等を保ち、Hyperlink スタイルの青字・下線を適用する。"""
+    fonts = styles.find(Q('fonts'))
+    cell_xfs = styles.find(Q('cellXfs'))
+    style_xfs = styles.find(Q('cellStyleXfs'))
+    if fonts is None or cell_xfs is None or style_xfs is None:
+        raise ValueError('Excel の書式定義が不足しています。')
+
+    def reuse_or_add(container, element):
+        serialized = ET.tostring(element)
+        for index, existing in enumerate(container):
+            if ET.tostring(existing) == serialized:
+                return index
+        container.append(element)
+        container.set('count', str(len(container)))
+        return len(container) - 1
+
+    def link_font(font_id):
+        font = copy.deepcopy(fonts[int(font_id)])
+        for child in list(font):
+            if child.tag in {Q('color'), Q('u')}:
+                font.remove(child)
+        ET.SubElement(font, Q('color'), {'theme': '10'})
+        ET.SubElement(font, Q('u'), {'val': 'single'})
+        return reuse_or_add(fonts, font)
+
+    named = styles.find(Q('cellStyles'))
+    if named is None:
+        named = ET.Element(Q('cellStyles'), {'count': '0'})
+        styles.insert(list(styles).index(cell_xfs) + 1, named)
+    hyperlink = next((s for s in named if s.get('builtinId') == '8' or
+                      s.get('name') == 'Hyperlink'), None)
+    if hyperlink is None:
+        base = copy.deepcopy(style_xfs[0])
+        base.set('fontId', str(link_font(base.get('fontId', '0'))))
+        base.set('applyFont', '1')
+        index = reuse_or_add(style_xfs, base)
+        hyperlink = ET.SubElement(named, Q('cellStyle'),
+                                  {'name': 'Hyperlink', 'xfId': str(index), 'builtinId': '8'})
+        named.set('count', str(len(named)))
+    xf = copy.deepcopy(cell_xfs[int(original_style)])
+    xf.set('fontId', str(link_font(xf.get('fontId', '0'))))
+    xf.set('xfId', hyperlink.get('xfId'))
+    xf.set('applyFont', '1')
+    return reuse_or_add(cell_xfs, xf)
+
+
 def xml_bytes(element, original=None):
     # Excel 拡張の mc:Ignorable 等が参照する宣言も保存する。
     namespaces = {}
@@ -303,6 +351,7 @@ def update_workbook(source, output, logs, force=False):
     copied_paths = {source:target for source,target in copy_plans}
     with ZipFile(source) as z:
         parts = {n: z.read(n) for n in z.namelist()}
+    styles = ET.fromstring(parts['xl/styles.xml'])
     strings = []
     if 'xl/sharedStrings.xml' in parts:
         strings = [''.join(t.text or '' for t in si.iter(Q('t')))
@@ -377,6 +426,7 @@ def update_workbook(source, output, logs, force=False):
         for child in list(cell):
             cell.remove(child)
         cell.set('t', 'inlineStr')
+        cell.set('s', str(hyperlink_cell_style(styles, cell.get('s', '0'))))
         text = ET.SubElement(ET.SubElement(cell, Q('is')), Q('t'))
         text.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
         text.text = value
@@ -399,6 +449,7 @@ def update_workbook(source, output, logs, force=False):
     if not changed:
         raise ValueError('記入対象がありません。')
     widen_memo(sheet)
+    parts['xl/styles.xml'] = xml_bytes(styles, parts['xl/styles.xml'])
     parts[sheet_path], parts[link_path] = xml_bytes(sheet, parts[sheet_path]), xml_bytes(rels, parts.get(link_path))
     output.parent.mkdir(parents=True, exist_ok=True)
     handle, temp_name = tempfile.mkstemp(prefix='ProCAIreport_', suffix='.xlsx', dir=output.parent)
