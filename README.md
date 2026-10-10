@@ -3,9 +3,8 @@ A collection of small tools for WSL
 
 ## Tools for C programming Classes
 
-* ProCcompile.sh : Compiles C source files in the specified directory using gcc.
+* ProCcompile.sh : Compiles C source files in the specified directory using gcc-mingw.
 * ProCexec.sh : Executes compiled binaries and outputs the results to a single log file.
-* ProCexecStdin.sh : Executes compiled binaries by feeding the contents of a specified file to stdin.
 * ProCcatsrc.sh : Concatenates C source files in a directory into a single PDF file.
 * identity_check.sh : Detects C sourse files for identical content from a directory.
 * Cstrip.py : Removes white spaces and line breaks from C source files. Used by identity_check.sh.
