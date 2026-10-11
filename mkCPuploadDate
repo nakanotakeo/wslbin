@@ -49,7 +49,7 @@ for user, time in upldate.items():
     newfile = ''
     base_name = ''
 
-    files = glob.glob(f'{user}*.pdf')
+    files = glob.glob(f'{user}*.[Pp][Dd][Ff]')
     for file in files:
         base_name = os.path.basename(file)
         pattern = f'{user}_01_*'

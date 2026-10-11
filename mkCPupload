@@ -13,7 +13,7 @@ if len(sys.argv) < 2:
 
 fbody = sys.argv[1]
 
-files = glob.glob("*.pdf")
+files = glob.glob("*.[Pp][Dd][Ff]")
 
 userlist = []
 for file in files:
