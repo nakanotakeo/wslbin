@@ -11,7 +11,6 @@ A collection of small tools for WSL
 * ProCcatsrc.sh : Concatenates C source files in a directory into a single PDF file.
 * identity_check.sh : Detects C sourse files for identical content from a directory.
 * Cstrip.py : Removes white spaces and line breaks from C source files. Used by identity_check.sh.
-* vscc.sh : Compiles a single C source file using the Visual Studio compiler.
 
 ## For CoursePower
 

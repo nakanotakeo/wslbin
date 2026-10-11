@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run Windows .exe submissions from WSL after ProCcompile.sh.
 # Usage: bash ProCexec.sh [--stdin=FILE] [BUILD_DIRECTORY]
-# Default build directory: ./ProCbuild; default stdin: /dev/null (EOF).
+# Default build directory: ./build; default stdin: /dev/null (EOF).
 # With --stdin, every executable receives the entire file independently.
 # Executables run in BUILD_DIRECTORY; exec.log/exec.pdf go in the caller's cwd.
 # Source and program output are assumed to be UTF-8; nkf is not required.
@@ -19,7 +19,7 @@ Usage: bash ProCexec.sh [--stdin=FILE] [BUILD_DIRECTORY]
   -h, --help    Show this help.
   --            End options (for a directory name beginning with '-').
 
-BUILD_DIRECTORY defaults to ProCbuild in the current directory.
+BUILD_DIRECTORY defaults to build/ in the current directory.
 Without --stdin, programs read EOF immediately; no keyboard input is supplied.
 exec.log and, if LibreOffice is installed, exec.pdf are saved in the current directory.
 EOS
@@ -32,7 +32,7 @@ die() {
 
 INPUT=/dev/null
 HAS_STDIN=0
-BUILDDIR=ProCbuild
+BUILDDIR=build
 HAS_BUILDDIR=0
 OPTIONS=1
 while (( $# > 0 )); do
@@ -117,7 +117,9 @@ done
 
 printf 'Log: %s\n' "$LOGFILE"
 if command -v libreoffice >/dev/null 2>&1; then
-    if ! libreoffice --headless --convert-to pdf --outdir "$LOGDIR" "$LOGFILE"; then
+    if ! libreoffice --headless \
+        --infilter="Text (encoded):UTF8,LF,IPA Gothic,ja-JP" \
+        --convert-to pdf --outdir "$LOGDIR" "$LOGFILE"; then
         printf 'PDF conversion failed; the log is available.\n' >&2
         failed=1
     fi

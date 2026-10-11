@@ -13,12 +13,14 @@ ZIP を通常どおり展開し、report_REP... フォルダと rptevaluation_RE
     python3 ../ProCAIreport.py
 
 出力は元の採点表と同じ場所の rptevaluation_AIreport.xlsx。
-Excel と同じ場所に ProChtmlAI/ を作り、HTML を英数字名でコピーする。
-例: S235023_us235023_02_日本語タイトル.html → ProChtmlAI/S235023_us235023_02.html
+Excel と同じ場所に AIhtml/ を作り、HTML を英数字名でコピーする。
+例: S235023_us235023_02_日本語タイトル.html → AIhtml/S235023_us235023_02.html
 名前の学籍番号・ユーザー ID・提出ファイル番号を維持し、日本語タイトルを除く。
 Excel の相対リンクはこのコピーに向ける。リンクを設定した評価メモのセルは、
-青字・下線のハイパーリンク書式にする。Excel を移動するときは ProChtmlAI/
+青字・下線のハイパーリンク書式にする。Excel を移動するときは AIhtml/
 も一緒に移動し、両者の位置関係を維持する。元の提出 HTML は変更しない。
+コピーには MOTW コメントを CRLF 付きで追加し、IE 系のローカル警告に対処する。
+警告が消えるかは Office と PC の設定に依存する。本文の改行は変換しない。
 出力が既にある場合、--force を付けると出力と今回対象の HTML コピーを更新する。
 
     python3 ProCAIreport.py . --force
@@ -73,7 +75,7 @@ PKG = 'http://schemas.openxmlformats.org/package/2006/relationships'
 ET.register_namespace('', NS)
 ET.register_namespace('r', REL)
 Q = lambda name: '{' + NS + '}' + name
-GENERATED = re.compile(r'AI利用\(質問(?:\d+回|回数不明)\) \[リンク\](?:（HTML \d+件）)?')
+GENERATED = re.compile(r'AI利用\(質問(?:\d+回|回数不明)\)(?: \[リンク\])?(?:（HTML \d+件）)?')
 USER_LABEL = re.compile(r'^(?:あなた(?:の発言|のメッセージ)?|ユーザー|User|Human|You)\s*[:：]?$', re.I)
 VOID = set('area base br col embed hr img input link meta param source track wbr'.split())
 IGNORED = {'script', 'style', 'svg', 'template', 'noscript'}
@@ -308,9 +310,29 @@ def html_copy_name(path):
     return f'S{match.group(1)}_us{match.group(2)}_{match.group(3)}.html'
 
 
+def html_with_motw(data):
+    """コピーに Internet zone の MOTW を付ける。本文の改行・文字コードは保つ。"""
+    if data.startswith((b'\xff\xfe', b'\xfe\xff')):
+        encoding = 'utf-16-le' if data.startswith(b'\xff\xfe') else 'utf-16-be'
+        text = data[2:].decode(encoding)
+        return data[:2] + html_with_motw(text.encode('utf-8')).decode('utf-8').encode(encoding)
+    mark = b'<!-- saved from url=(0014)about:internet -->\r\n'
+    # 先頭の既存 MOTW を置換する（先にある MOTW が優先されるため）。
+    existing = re.search(rb'<!--\s*saved from url=.*?-->[ \t]*(?:\r\n|\n|\r)?',
+                         data[:1024], re.I | re.S)
+    if existing:
+        return data[:existing.start()] + mark + data[existing.end():]
+    bom = 3 if data.startswith(b'\xef\xbb\xbf') else 0
+    doctype = re.match(rb'\s*<!doctype\b[^>]*>', data[bom:bom+512], re.I)
+    if doctype:
+        position = bom + doctype.end()
+        return data[:position] + b'\r\n' + mark + data[position:]
+    return data[:bom] + mark + data[bom:]
+
+
 def plan_html_copies(logs, output, force):
     """保存前に名前衝突を検出する。実際のコピーは Excel の検証後に行う。"""
-    directory = output.parent/'ProChtmlAI'
+    directory = output.parent/'AIhtml'
     plans, seen = [], {}
     for sid, items in sorted(logs.items()):
         for item in items:
@@ -322,7 +344,7 @@ def plan_html_copies(logs, output, force):
             if target.exists():
                 if not target.is_file():
                     raise ValueError(f'HTML のコピー先がファイルではありません: {target}')
-                if target.read_bytes() != source.read_bytes() and not force:
+                if target.read_bytes() != html_with_motw(source.read_bytes()) and not force:
                     raise ValueError(f'異なる内容の HTML コピーが存在します: {target}（更新する場合は --force）')
             plans.append((source,target))
     return plans
@@ -331,12 +353,14 @@ def plan_html_copies(logs, output, force):
 def save_html_copies(plans):
     for source, target in plans:
         target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists() and target.read_bytes() == source.read_bytes():
+        content = html_with_motw(source.read_bytes())
+        if target.exists() and target.read_bytes() == content:
             continue
         handle, temp_name = tempfile.mkstemp(prefix='ProCAIreport_', suffix='.html', dir=target.parent)
         os.close(handle)
         try:
-            shutil.copy2(source, temp_name)
+            Path(temp_name).write_bytes(content)
+            shutil.copystat(source, temp_name)
             os.replace(temp_name,target)
         finally:
             Path(temp_name).unlink(missing_ok=True)
@@ -412,7 +436,7 @@ def update_workbook(source, output, logs, force=False):
         if previous and not GENERATED.search(old):
             raise ValueError(f'{address} に既存のリンクがあります。手動確認が必要です。')
         total = None if any(r['count'] is None for r in items) else sum(r['count'] for r in items)
-        memo = 'AI利用(質問' + (f'{total}回' if total is not None else '回数不明') + ') [リンク]'
+        memo = 'AI利用(質問' + (f'{total}回' if total is not None else '回数不明') + ')'
         if len(items) > 1:
             memo += f'（HTML {len(items)}件）'
         kept = GENERATED.sub('', old).strip()
@@ -531,7 +555,7 @@ def main(argv=None):
             raise ValueError('HTML がありません。出力は作成しません。')
         changed = update_workbook(source, output, logs, args.force)
         unknown = sum(any(i['count'] is None for i in items) for items in logs.values())
-        print(f'保存: {output}\nHTML コピー先: {output.parent/"ProChtmlAI"}\n記入: {changed}名、質問回数不明: {unknown}名')
+        print(f'保存: {output}\nHTML コピー先: {output.parent/"AIhtml"}\n記入: {changed}名、質問回数不明: {unknown}名')
         for sid, items in logs.items():
             if len(items)>1:
                 print(f'注意: S{sid} は HTML {len(items)} 件の合計です。リンクは先頭ファイルです。ログの重複は手動で確認してください。',file=sys.stderr)

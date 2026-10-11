@@ -3,9 +3,9 @@
 # Requirements (Debian): sudo apt install gcc-mingw-w64-x86-64
 # Usage: bash ProCcompile.sh Cfolder
 #
-# Copy each Cfolder/*.c to ./ProCbuild/STUDENT.c without encoding conversion.
+# Copy each Cfolder/*.c to ./build/STUDENT.c without encoding conversion.
 # STUDENT is the part before the first underscore, e.g. S227083_us... -> S227083.
-# Build ./ProCbuild/STUDENT.exe with x86_64-w64-mingw32-gcc (Windows binary).
+# Build ./build/STUDENT.exe with x86_64-w64-mingw32-gcc (Windows binary).
 # Compiler stdout/stderr are displayed and saved to ./compile.log (overwritten).
 # Each submission must be a standalone UTF-8 C source file.
 # Original submissions are not modified. Subdirectories are not searched.
@@ -34,7 +34,7 @@ if [[ ! -d $1 ]]; then
     exit 2
 fi
 FOLDER=$(cd -- "$1" && pwd -P)
-OUTDIR="$PWD/ProCbuild"
+OUTDIR="$PWD/build"
 mkdir -p -- "$OUTDIR"
 OUTDIR=$(cd -- "$OUTDIR" && pwd -P)
 if [[ $FOLDER == "$OUTDIR" ]]; then

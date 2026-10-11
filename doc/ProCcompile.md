@@ -51,8 +51,8 @@ bash ~/wslbin/ProCcompile.sh "C 提出物"
 
 | 提出ファイル名 | コピー先 | 実行ファイル |
 | --- | --- | --- |
-| `us227083_氏名.c` | `ProCbuild/us227083.c` | `ProCbuild/us227083.exe` |
-| `S227083_us227083_01_week1report.c` | `ProCbuild/S227083.c` | `ProCbuild/S227083.exe` |
+| `us227083_氏名.c` | `build/us227083.c` | `build/us227083.exe` |
+| `S227083_us227083_01_week1report.c` | `build/S227083.c` | `build/S227083.exe` |
 
 同じ名前に短縮される提出物が複数ある場合は、上書きを避けるため停止する。
 
@@ -60,8 +60,8 @@ bash ~/wslbin/ProCcompile.sh "C 提出物"
 
 | 出力 | 保存先・内容 |
 | --- | --- |
-| コピーした `.c` | カレントディレクトリの `ProCbuild/` |
-| Windows 用 `.exe` | カレントディレクトリの `ProCbuild/` |
+| コピーした `.c` | カレントディレクトリの `build/` |
+| Windows 用 `.exe` | カレントディレクトリの `build/` |
 | `compile.log` | カレントディレクトリ。提出物名と、コンパイラの標準出力・標準エラー |
 
 コンパイラの出力は、画面にも表示する。処理開始時に `compile.log` を空にするため、ログは毎回上書きされる。ログ保存の初期化より前に引数・環境チェックで停止した場合は、前回のログが残る。
