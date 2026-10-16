@@ -21,4 +21,4 @@ A collection of small tools for WSL
 ## Misc
 * EEexpAddTopPagePDF.py : Add a ChkPage to PDFs submitted by students
 * getRSSzip.sh : Get RSS ZIP file from the surf server
-
+* mdunzip.sh : create a directory with the same name of the zip file and extract the contents into it.
