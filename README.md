@@ -8,6 +8,10 @@ A collection of small tools for WSL
 * ProCjoinWord2pdf.py : Merge submitted docx files into single pdf file.
 * ProCAIreport.py : Adds AI chat counts and log links to the grading Excel book.
 
+* ProCtokenize.py : Converts C source code into a normalized token sequence for comparison, ignoring whitespace and comments while preserving literals.
+* FindDuplicates.py : Groups matching C files from two `build/` directories, ignoring whitespace and comments.
+* FindCopies.py : Groups C files with identical byte content from two `build/` directories.
+
 * ProCcatsrc.sh : Concatenates C source files in a directory into a single PDF file.
 * identity_check.sh : Detects C sourse files for identical content from a directory.
 * Cstrip.py : Removes white spaces and line breaks from C source files. Used by identity_check.sh.
