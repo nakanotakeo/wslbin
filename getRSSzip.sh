@@ -18,8 +18,12 @@ day=$(date -d "20${last:0:2}-${last:2:2}-${last:4:2} +1 day" +%Y-%m-%d)
 while [[ $(date -d "$day" +%y%m%d) -le $today ]]; do
     zipname="RSSs$(date -d "$day" +%y%m%d).zip"
 
-    echo "Downloading $zipname"
-    wget -v --no-proxy -O "$dir/$zipname" "$URLbase/$zipname"
+    if wget --no-proxy -v -O "$dir/$zipname.tmp" "$URLbase/$zipname"; then
+        mv "$dir/$zipname.tmp" "$dir/$zipname"
+    else
+        echo "Failed to download $zipname" >&2
+        rm -f "$dir/$zipname.tmp"
+    fi
 
     day=$(date -d "$day +1 day" +%Y-%m-%d)
 done
