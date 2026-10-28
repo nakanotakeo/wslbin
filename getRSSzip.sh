@@ -4,7 +4,7 @@ dir="$HOME/Dropbox/RSS"
 URLbase="https://surf.st.seikei.ac.jp/~nakano/RSS"
 
 # 7:30 より前は前日扱い
-today=$(date -d '7 hours 30 minutes ago' +%y%m%d)
+today=$(date -d '7 hours ago 30 minutes ago' +%y%m%d)
 
 # ローカルにある最新の ZIP の日付
 last=$(find "$dir" -maxdepth 1 -name 'RSSs[0-9][0-9][0-9][0-9][0-9][0-9].zip' \
